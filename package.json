@@ -1,0 +1,29 @@
+{
+  "author": "Minty Fresh",
+  "name": "vite-plugin-shoeshine",
+  "version": "0.1.0",
+  "description": "Secure client-side image definitions with Shoeshine.",
+  "files": [
+    "dist",
+    "/client.d.ts"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "magic-string": "^0.30.5"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.3",
+    "typescript": "^5.2.2",
+    "vite": "^4.3.9",
+    "vitest": "^0.34.6"
+  },
+  "peerDependencies": {
+    "vite": ">=2"
+  }
+}
