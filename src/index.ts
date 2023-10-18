@@ -2,12 +2,12 @@ import jwt, { SignOptions } from 'jsonwebtoken'
 import MagicString from 'magic-string'
 import { Plugin } from 'vite'
 
-const encodeShoeshineConfig = (config: any, signingKey: string, signOptions?: SignOptions): string => {
+const encodeShoeshineConfig = (config: ShoeshineConfig, signingKey: string, signOptions?: SignOptions): string => {
   const payload = {
-    sz: config.size?.join('/'),
+    sz: config.size,
     fmt: config.format,
     rsz: config.resize,
-    ank: config.anchor,
+    g: config.gravity,
   }
 
   return jwt.sign(
@@ -19,6 +19,40 @@ const encodeShoeshineConfig = (config: any, signingKey: string, signOptions?: Si
     }
   )
 }
+
+const generateShoeshineFunction = (config: ShoeshineConfig, signingKey: string, signOptions?: SignOptions): string => (
+  `(
+    function() {
+      return [
+        \`${encodeShoeshineConfig(config, signingKey, signOptions)}\`,
+        {
+          ...${JSON.stringify(config)},
+          get width() { return this.size?.[0] },
+          get height() { return this.size?.[1] },
+        }
+      ];
+    }
+  )`
+)
+
+const generateShoeshineFunctionMulti = (config: ShoeshineConfigMulti, signingKey: string, signOptions?: SignOptions): string => (
+  `(
+    function() {
+      return {
+        ${config.formats.map((format) => (
+          `"${format}": [
+            \`${encodeShoeshineConfig({ ...config, format }, signingKey, signOptions)}\`,
+            {
+              ...${JSON.stringify({ ...config, formats: undefined, format })},
+              get width() { return this.size?.[0] },
+              get height() { return this.size?.[1] },
+            }
+          ]`
+        )).join(',\n')}
+      };
+    }
+  )`
+)
 
 export default function vitePluginShoeshine(signingKey: string, signOptions?: SignOptions): Plugin {
   let sourceMapsEnabled = false
@@ -52,23 +86,15 @@ export default function vitePluginShoeshine(signingKey: string, signOptions?: Si
         const start = request.index!
         const end = start + request[0].length
 
-        const config = new Function(`return (${request[1]})`)()
-        const encoded = encodeShoeshineConfig(config, signingKey, signOptions)
+        const config: ShoeshineConfig | ShoeshineConfigMulti = new Function(`return (${request[1]})`)()
 
-        const result = `(
-          function() {
-            return [
-              \`${encoded}\`,
-              {
-                ...${JSON.stringify(config)},
-                get width() { return this.size?.[0] },
-                get height() { return this.size?.[1] },
-              }
-            ];
-          }
-        )`
-
-        code.overwrite(start, end, result)
+        if ('formats' in config) {
+          const shoeshine = generateShoeshineFunctionMulti(config, signingKey, signOptions)
+          code.overwrite(start, end, shoeshine)
+        } else {
+          const shoeshine = generateShoeshineFunction(config, signingKey, signOptions)
+          code.overwrite(start, end, shoeshine)
+        }
       })
 
       return {
