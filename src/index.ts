@@ -22,10 +22,24 @@ const encodeShoeshineConfig = (config: ShoeshineConfig, signingKey: string, sign
 }
 
 const generateShoeshineImageFunction = (config: ShoeshineConfig, signingKey: string, signOptions?: SignOptions): string => (
+  /*
+    (
+      function() {
+        return [
+          "{token}",
+          {
+            ...{"size":[10,10]},
+            get width() { return this.size?.[0] },
+            get height() { return this.size?.[1] },
+          }
+        ];
+      }
+    )
+  */
   `(
     function() {
       return [
-        \`${encodeShoeshineConfig(config, signingKey, signOptions)}\`,
+        "${encodeShoeshineConfig(config, signingKey, signOptions)}",
         {
           ...${JSON.stringify(config)},
           get width() { return this.size?.[0] },
@@ -37,12 +51,28 @@ const generateShoeshineImageFunction = (config: ShoeshineConfig, signingKey: str
 )
 
 const generateShoeshineMultiFunction = (config: ShoeshineConfigMulti, signingKey: string, signOptions?: SignOptions): string => (
+  /*
+    (
+      function() {
+        return {
+          "jpeg": [
+            "{token}",
+            {
+              ...{"size":[10,10]},
+              get width() { return this.size?.[0] },
+              get height() { return this.size?.[1] },
+            }
+          ]
+        };
+      }
+    )
+  */
   `(
     function() {
       return {
         ${config.formats.map((format) => (
           `"${format}": [
-            \`${encodeShoeshineConfig({ ...config, format }, signingKey, signOptions)}\`,
+            "${encodeShoeshineConfig({ ...config, format }, signingKey, signOptions)}",
             {
               ...${JSON.stringify({ ...config, formats: undefined, format })},
               get width() { return this.size?.[0] },
@@ -56,6 +86,24 @@ const generateShoeshineMultiFunction = (config: ShoeshineConfigMulti, signingKey
 )
 
 const generateShoeshineVariantsFunction = (config: ShoeshineConfigVariants, signingKey: string, signOptions?: SignOptions): string => (
+  /*
+    (
+      function() {
+        return {
+          "1x": {
+            "jpeg": [
+              "{token}",
+              {
+                ...{"size":[10,10]},
+                get width() { return this.size?.[0] },
+                get height() { return this.size?.[1] },
+              }
+            ]
+          }
+        }
+      }
+    )
+  */
   `(
     function() {
       return {
@@ -63,7 +111,7 @@ const generateShoeshineVariantsFunction = (config: ShoeshineConfigVariants, sign
           `"${variant}": {
             ${config[variant].formats.map((format) => (
               `"${format}": [
-                \`${encodeShoeshineConfig({ ...config[variant], format }, signingKey, signOptions)}\`,
+                "${encodeShoeshineConfig({ ...config[variant], format }, signingKey, signOptions)}",
                 {
                   ...${JSON.stringify({ ...config[variant], formats: undefined, format })},
                   get width() { return this.size?.[0] },
