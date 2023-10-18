@@ -20,7 +20,7 @@ const encodeShoeshineConfig = (config: ShoeshineConfig, signingKey: string, sign
   )
 }
 
-const generateShoeshineFunction = (config: ShoeshineConfig, signingKey: string, signOptions?: SignOptions): string => (
+const generateShoeshineImageFunction = (config: ShoeshineConfig, signingKey: string, signOptions?: SignOptions): string => (
   `(
     function() {
       return [
@@ -35,7 +35,7 @@ const generateShoeshineFunction = (config: ShoeshineConfig, signingKey: string, 
   )`
 )
 
-const generateShoeshineFunctionMulti = (config: ShoeshineConfigMulti, signingKey: string, signOptions?: SignOptions): string => (
+const generateShoeshineMultiFunction = (config: ShoeshineConfigMulti, signingKey: string, signOptions?: SignOptions): string => (
   `(
     function() {
       return {
@@ -50,6 +50,29 @@ const generateShoeshineFunctionMulti = (config: ShoeshineConfigMulti, signingKey
           ]`
         )).join(',\n')}
       };
+    }
+  )`
+)
+
+const generateShoeshineVariantsFunction = (config: ShoeshineConfigVariants, signingKey: string, signOptions?: SignOptions): string => (
+  `(
+    function() {
+      return {
+        ${Object.keys(config).map((variant) => (
+          `"${variant}": {
+            ${config[variant].formats.map((format) => (
+              `"${format}": [
+                \`${encodeShoeshineConfig({ ...config[variant], format }, signingKey, signOptions)}\`,
+                {
+                  ...${JSON.stringify({ ...config[variant], formats: undefined, format })},
+                  get width() { return this.size?.[0] },
+                  get height() { return this.size?.[1] },
+                }
+              ]`
+            )).join(',\n')}
+          }`
+        )).join(',\n')}
+      }
     }
   )`
 )
@@ -74,7 +97,7 @@ export default function vitePluginShoeshine(signingKey: string, signOptions?: Si
         return
       }
 
-      const requests = [...src.matchAll(/import\.meta\.shoeshine\<([^>]+)\>/g)]
+      const requests = [...src.matchAll(/shoeshine\.(image|multi|variants)\<([^>]+)\>/g)]
 
       if (requests.length === 0) {
         return
@@ -86,15 +109,32 @@ export default function vitePluginShoeshine(signingKey: string, signOptions?: Si
         const start = request.index!
         const end = start + request[0].length
 
-        const config: ShoeshineConfig | ShoeshineConfigMulti = new Function(`return (${request[1]})`)()
+        let generated = null;
+        const config = new Function(`return (${request[2]})`)()
 
-        if ('formats' in config) {
-          const shoeshine = generateShoeshineFunctionMulti(config, signingKey, signOptions)
-          code.overwrite(start, end, shoeshine)
-        } else {
-          const shoeshine = generateShoeshineFunction(config, signingKey, signOptions)
-          code.overwrite(start, end, shoeshine)
+        switch (request[1]) {
+          case 'image': {
+            const image: ShoeshineConfig = config
+            generated = generateShoeshineImageFunction(config, signingKey, signOptions)
+            break;
+          }
+
+          case 'multi': {
+            const multi: ShoeshineConfigMulti = config
+            generated = generateShoeshineMultiFunction(config, signingKey, signOptions)
+          }
+
+          case 'variants': {
+            const variants: ShoeshineConfigVariants = config
+            generated = generateShoeshineVariantsFunction(config, signingKey, signOptions)
+            break;
+          }
+
+          default:
+            throw new Error(`Unknown shoeshine request type: ${request[1]}`)
         }
+
+        code.overwrite(start, end, generated)
       })
 
       return {
