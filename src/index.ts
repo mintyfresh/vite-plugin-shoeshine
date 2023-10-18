@@ -8,6 +8,7 @@ const encodeShoeshineConfig = (config: ShoeshineConfig, signingKey: string, sign
     fmt: config.format,
     rsz: config.resize,
     g: config.gravity,
+    q: config.quality,
   }
 
   return jwt.sign(
