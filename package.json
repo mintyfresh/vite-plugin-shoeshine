@@ -1,7 +1,7 @@
 {
   "author": "Minty Fresh",
   "name": "@mintyfresh/vite-plugin-shoeshine",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Secure client-side image definitions with Shoeshine.",
   "files": [
     "dist",

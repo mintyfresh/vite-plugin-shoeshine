@@ -1,5 +1,5 @@
 type ShoeshineSize = [number, number]
-type ShoeshineFormat = 'jpg' | 'png' | 'webp'
+type ShoeshineFormat = 'jpeg' | 'png' | 'webp'
 type ShoeshineResize = 'fit' | 'fill' | 'limit'
 type ShoeshineGravity =
   'north' | 'east' | 'south' | 'west' |
@@ -23,6 +23,11 @@ interface ShoeshineConfigMulti {
 }
 
 declare interface ImportMeta {
-  shoeshine<T extends ShoeshineConfig>(): [string, T]
-  shoeshine<T extends ShoeshineConfigMulti>(): Record<ShoeshineFormat, [string, ShoeshineConfig]>
+  shoeshine<T extends {
+    [K in keyof T]: K extends keyof ShoeshineConfig ? ShoeshineConfig[K] : never
+  }>(): [string, T]
+
+  shoeshine<T extends {
+    [K in keyof T]: K extends keyof ShoeshineConfigMulti ? ShoeshineConfigMulti[K] : never
+  }>(): Record<ShoeshineFormat, [string, ShoeshineConfig]>
 }
