@@ -114,18 +114,16 @@ export default function vitePluginShoeshine(signingKey: string, signOptions?: Si
 
         switch (request[1]) {
           case 'image': {
-            const image: ShoeshineConfig = config
             generated = generateShoeshineImageFunction(config, signingKey, signOptions)
             break;
           }
 
           case 'multi': {
-            const multi: ShoeshineConfigMulti = config
             generated = generateShoeshineMultiFunction(config, signingKey, signOptions)
+            break;
           }
 
           case 'variants': {
-            const variants: ShoeshineConfigVariants = config
             generated = generateShoeshineVariantsFunction(config, signingKey, signOptions)
             break;
           }
